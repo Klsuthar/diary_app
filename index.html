@@ -1,0 +1,805 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>My Personal Diary</title>
+    <meta name="description" content="Track your daily life, health, mood, and activities">
+    <link rel="manifest" href="manifest.json">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <meta name="theme-color" content="#0f172a">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+</head>
+
+<body>
+    <div class="app-container">
+        <!-- Top Bar -->
+        <header class="top-bar">
+            <div class="date-controls">
+                <button id="prev-date" class="icon-btn" aria-label="Previous day"><i class="fas fa-chevron-left"></i></button>
+                <div class="current-date-display" id="date-btn">
+                    <span id="display-weekday">Monday</span>
+                    <span id="display-date">Oct 24, 2023</span>
+                    <input type="date" id="entry-date" class="hidden-date-input">
+                </div>
+                <button id="next-date" class="icon-btn" aria-label="Next day"><i class="fas fa-chevron-right"></i></button>
+            </div>
+            <div class="header-actions">
+                <button id="save-btn" class="icon-btn primary-btn" title="Save Form Data Locally"><i
+                        class="fas fa-save"></i></button>
+                <button id="export-btn" class="icon-btn" title="Download Diary (Export JSON)"><i
+                        class="fas fa-file-arrow-down"></i></button>
+                <div class="dropdown">
+                    <button id="menu-btn" class="icon-btn" title="More options"><i
+                            class="fas fa-ellipsis-v"></i></button>
+                    <div class="dropdown-content" id="main-menu">
+                        <button id="menu-share"><i class="fas fa-share-alt"></i> Share Entry</button>
+                        <button id="menu-export"><i class="fas fa-file-arrow-down"></i> Export Entry</button>
+                        <button id="menu-import"><i class="fas fa-file-import"></i> Import JSON</button>
+                        <button id="menu-clear"><i class="fas fa-trash-alt"></i> Clear Form</button>
+                        <div class="divider"></div>
+                        <button id="menu-backup"><i class="fas fa-download"></i> Create Backup</button>
+                        <button id="menu-restore"><i class="fas fa-upload"></i> Restore Backup</button>
+                        <div class="divider"></div>
+                        <button id="menu-refresh"><i class="fas fa-sync-alt"></i> Hard Refresh</button>
+                        <!-- <button id="menu-settings"><i class="fas fa-cog"></i> Settings</button> -->
+                    </div>
+                </div>
+            </div>
+            <!-- Multi-select Header (Hidden by default) -->
+            <div class="multi-select-header hidden" id="multi-select-header">
+                <div class="selection-info">
+                    <button id="cancel-multi" class="icon-btn"><i class="fas fa-times"></i></button>
+                    <span id="selection-count">0 selected</span>
+                </div>
+                <div class="selection-actions">
+                    <button id="export-multi" class="icon-btn" disabled><i class="fas fa-file-export"></i></button>
+                    <button id="delete-multi" class="icon-btn" disabled><i class="fas fa-trash"></i></button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content Area -->
+        <main class="content-area">
+
+            <!-- 1. Basic Tab -->
+            <section id="tab-basic" class="tab-content active">
+
+                <!-- Environment Card -->
+                <div class="card">
+                    <div class="card-header-flex">
+                        <h3><i class="fas fa-cloud-sun"></i> Environment</h3>
+                        <button id="import-last-env" class="text-btn"><i class="fas fa-file-import"></i> Import Last</button>
+                    </div>
+
+                    <!-- Temperature Section -->
+                    <div class="form-group">
+                        <label class="field-label">
+                            <i class="fas fa-temperature-high"></i> Temperature
+                        </label>
+                        <div class="temp-range">
+                            <div class="temp-input">
+                                <label>Min</label>
+                                <input type="number" id="temp-min" placeholder="Min" min="-10" max="60">
+                                <span>°C</span>
+                            </div>
+                            <div class="temp-input">
+                                <label>Max</label>
+                                <input type="number" id="temp-max" placeholder="Max" min="-10" max="60">
+                                <span>°C</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Weather Condition -->
+                    <div class="form-group">
+                        <label class="field-label">
+                            <i class="fas fa-cloud-sun"></i> Weather Condition
+                        </label>
+                        <input type="text" id="weather-condition" list="weather-suggestions" placeholder="Enter weather condition">
+                        <datalist id="weather-suggestions">
+                            <option value="Sunny">
+                            <option value="Cloudy">
+                            <option value="Rainy">
+                            <option value="Stormy">
+                            <option value="Snowy">
+                            <option value="Windy">
+                            <option value="Foggy">
+                        </datalist>
+                    </div>
+
+                    <!-- Air Quality Index -->
+                    <div class="form-group">
+                        <label class="field-label">
+                            <i class="fas fa-wind"></i> Air Quality Index (AQI)
+                        </label>
+                        <div class="slider-container">
+                            <input type="range" id="aqi" min="0" max="300" step="10" value="50" class="slider">
+                            <div class="slider-value">
+                                <span id="aqi-value">50</span>
+                                <span id="aqi-label" class="aqi-good">Good</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Humidity -->
+                    <div class="form-group">
+                        <label class="field-label">
+                            <i class="fas fa-tint"></i> Humidity
+                        </label>
+                        <div class="slider-container">
+                            <input type="range" id="humidity" min="0" max="100" value="50" class="slider">
+                            <div class="slider-value">
+                                <span id="humidity-value">50</span>%
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- UV Index -->
+                    <div class="form-group">
+                        <label class="field-label">
+                            <i class="fas fa-sun"></i> UV Index
+                        </label>
+                        <div class="slider-container">
+                            <input type="range" id="uv-index" min="0" max="12" value="0" class="slider uv-slider">
+                            <div class="slider-value">
+                                <span id="uv-value">0</span>
+                                <span id="uv-label" class="uv-low">Low</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Environment Experience -->
+                    <div class="form-group">
+                        <label class="field-label">
+                            <i class="fas fa-leaf"></i> Environment Experience
+                        </label>
+                        <textarea id="env-experience" rows="2" style="resize: vertical; width: 100%;"
+                            placeholder="Describe your environment experience..."></textarea>
+                    </div>
+                </div>
+
+            </section>
+
+            <!-- 2. Body Tab -->
+            <section id="tab-body" class="tab-content">
+
+                <!-- Measurements Card -->
+                <div class="card">
+                    <label class="field-label">
+                        <i class="fas fa-dumbbell"></i> Body Measurements
+                    </label>
+                    <div class="body-measurements-grid">
+                        <div class="measurement-item">
+                            <label>Weight</label>
+                            <input type="number" id="weight" placeholder="kg" step="0.1">
+                            <span>kg</span>
+                        </div>
+                        <div class="measurement-item">
+                            <label>Height</label>
+                            <input type="number" id="height" placeholder="cm">
+                            <span>cm</span>
+                        </div>
+                        <div class="measurement-item">
+                            <label>Chest</label>
+                            <input type="number" id="chest" placeholder="cm" step="0.1">
+                            <span>cm</span>
+                        </div>
+                        <div class="measurement-item">
+                            <label>Belly</label>
+                            <input type="number" id="belly" placeholder="cm" step="0.1">
+                            <span>cm</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sleep Card -->
+                <div class="card">
+                    <label class="field-label">
+                        <i class="fas fa-bed"></i> Sleep
+                    </label>
+
+                    <div class="form-group">
+                        <label>Duration</label>
+                        <input type="text" id="sleep-hours" placeholder="e.g. 7:30">
+                    </div>
+
+                    <div class="slider-container">
+                        <label
+                            style="font-size:0.85rem; color:var(--text-secondary); margin-bottom:5px; display:block;">Quality</label>
+                        <input type="range" id="sleep-quality" min="1" max="10" value="5" class="slider">
+                        <div class="slider-value">
+                            <span id="sleep-qual-val">5</span>
+                            <span id="sleep-qual-label" class="qual-avg">Average 😐</span>
+                        </div>
+                    </div>
+
+                    <div class="form-group mt-2">
+                        <textarea id="sleep-desc" rows="2"
+                            placeholder="How was your sleep? Any interruptions?"></textarea>
+                        <small id="sleep-desc-count" class="char-count">(0/200)</small>
+                    </div>
+                </div>
+
+                <!-- Activity Card -->
+                <div class="card">
+                    <label class="field-label">
+                        <i class="fas fa-running"></i> Activity
+                    </label>
+                    <div class="activity-row">
+                        <div class="activity-item">
+                            <i class="fas fa-shoe-prints"></i>
+                            <input type="number" id="steps-count" placeholder="0">
+                            <small>Steps</small>
+                        </div>
+                        <div class="activity-item">
+                            <i class="fas fa-ruler"></i>
+                            <input type="number" id="distance-km" step="0.1" placeholder="0">
+                            <small>km</small>
+                        </div>
+                        <div class="activity-item">
+                            <i class="fas fa-fire"></i>
+                            <input type="number" id="calories" placeholder="0">
+                            <small>kcal</small>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Hydration Card -->
+                <div class="card hydration-card">
+                    <label class="field-label">
+                        <i class="fas fa-tint"></i> Hydration
+                    </label>
+
+                    <div class="hydration-main">
+                        <input type="number" id="water-intake" step="0.1" value="0.0">
+                        <span>Liters</span>
+                    </div>
+
+                    <div class="glass-indicators" id="glass-indicators">
+                        <!-- Injected by JS -->
+                        <i class="far fa-circle"></i>
+                        <i class="far fa-circle"></i>
+                        <i class="far fa-circle"></i>
+                        <i class="far fa-circle"></i>
+                        <i class="far fa-circle"></i>
+                        <i class="far fa-circle"></i>
+                        <i class="far fa-circle"></i>
+                        <i class="far fa-circle"></i>
+                    </div>
+
+                    <div class="quick-add-row">
+                        <button class="quick-add-btn" data-add="0.25">+0.25L</button>
+                        <button class="quick-add-btn" data-add="0.5">+0.5L</button>
+                        <button class="quick-add-btn" data-add="1.0">+1L</button>
+                    </div>
+                </div>
+
+                <!-- Medical Card -->
+                <div class="card">
+                    <label class="field-label">
+                        <i class="fas fa-pills"></i> Medications
+                    </label>
+                    <textarea id="medications" rows="2" style="resize: vertical; width: 100%;" placeholder="List medications taken today..."></textarea>
+                </div>
+
+                <!-- Symptoms Card -->
+                <div class="card">
+                    <label class="field-label">
+                        <i class="fas fa-stethoscope"></i> Physical Symptoms
+                    </label>
+                    <textarea id="symptoms" rows="2" style="resize: vertical; width: 100%;" placeholder="Any physical symptoms or discomfort?"></textarea>
+                </div>
+
+            </section>
+
+            <!-- 3. Mental Tab -->
+            <section id="tab-mental" class="tab-content">
+
+                <!-- 1. Mental State Card -->
+                <div class="card mental-state-card">
+                    <div class="card-header">
+                        <i class="fas fa-brain"></i> <span class="card-title">Mental State</span>
+                    </div>
+                    <div class="form-group">
+                        <label>Overall State</label>
+                        <input type="text" id="mental-state" placeholder="e.g. Positive, Calm, Anxious, etc.">
+                    </div>
+                    <div class="form-group">
+                        <label>Reason <small id="mental-reason-count" class="char-count">(0/500)</small></label>
+                        <textarea id="mental-state-reason" rows="3"
+                            placeholder="Describe your mental state..."></textarea>
+                    </div>
+                </div>
+
+                <!-- 2. Mood Timeline Section -->
+                <div class="timeline-section">
+                    <div class="section-header">
+                        <i class="fas fa-clock"></i>
+                        <h4>Mood Timeline</h4>
+                    </div>
+                    <p class="section-subtitle">Track your mood throughout the day</p>
+
+                    <div class="timeline-container">
+                        <!-- Morning -->
+                        <div class="period-card" data-period="morning">
+                            <div class="period-badge morning-badge">
+                                🌅 Morning (6-12)
+                                <button class="add-period-mood-btn" data-period="morning" title="Add Mood"><i class="fas fa-plus"></i></button>
+                            </div>
+                            <div class="period-content" id="morning-moods">
+                                <div class="mood-entry" data-index="0">
+                                    <button class="remove-mood-entry-btn" title="Remove"><i class="fas fa-times"></i></button>
+                                    <div class="slider-group">
+                                        <div class="flex-between">
+                                            <label>Mood Level</label>
+                                            <span class="mood-val-display">5 😐</span>
+                                        </div>
+                                        <input type="range" class="mood-slider" min="1" max="10" value="5">
+                                    </div>
+                                    <div class="mood-dropdowns-grid">
+                                        <div class="dropdown-group">
+                                            <label>Category</label>
+                                            <select class="mood-cat">
+                                                <option value="">Select Category...</option>
+                                                <option value="positive_high_energy">Positive High Energy</option>
+                                                <option value="neutral_balanced">Neutral Balanced</option>
+                                                <option value="low_energy_tired">Low Energy Tired</option>
+                                                <option value="negative_heavy">Negative Heavy</option>
+                                                <option value="cognitive">Cognitive</option>
+                                            </select>
+                                        </div>
+                                        <div class="dropdown-group">
+                                            <label>Feeling</label>
+                                            <select class="mood-feel" disabled>
+                                                <option value="">Select Category First</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Afternoon -->
+                        <div class="period-card" data-period="afternoon">
+                            <div class="period-badge afternoon-badge">
+                                ☀️ Afternoon (12-4)
+                                <button class="add-period-mood-btn" data-period="afternoon" title="Add Mood"><i class="fas fa-plus"></i></button>
+                            </div>
+                            <div class="period-content" id="afternoon-moods">
+                                <div class="mood-entry" data-index="0">
+                                    <button class="remove-mood-entry-btn" title="Remove"><i class="fas fa-times"></i></button>
+                                    <div class="slider-group">
+                                        <div class="flex-between">
+                                            <label>Mood Level</label>
+                                            <span class="mood-val-display">5 😐</span>
+                                        </div>
+                                        <input type="range" class="mood-slider" min="1" max="10" value="5">
+                                    </div>
+                                    <div class="mood-dropdowns-grid">
+                                        <div class="dropdown-group">
+                                            <label>Category</label>
+                                            <select class="mood-cat">
+                                                <option value="">Select Category...</option>
+                                                <option value="positive_high_energy">Positive High Energy</option>
+                                                <option value="neutral_balanced">Neutral Balanced</option>
+                                                <option value="low_energy_tired">Low Energy Tired</option>
+                                                <option value="negative_heavy">Negative Heavy</option>
+                                                <option value="cognitive">Cognitive</option>
+                                            </select>
+                                        </div>
+                                        <div class="dropdown-group">
+                                            <label>Feeling</label>
+                                            <select class="mood-feel" disabled>
+                                                <option value="">Select Category First</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Evening -->
+                        <div class="period-card" data-period="evening">
+                            <div class="period-badge evening-badge">
+                                🌆 Evening (4-9)
+                                <button class="add-period-mood-btn" data-period="evening" title="Add Mood"><i class="fas fa-plus"></i></button>
+                            </div>
+                            <div class="period-content" id="evening-moods">
+                                <div class="mood-entry" data-index="0">
+                                    <button class="remove-mood-entry-btn" title="Remove"><i class="fas fa-times"></i></button>
+                                    <div class="slider-group">
+                                        <div class="flex-between">
+                                            <label>Mood Level</label>
+                                            <span class="mood-val-display">5 😐</span>
+                                        </div>
+                                        <input type="range" class="mood-slider" min="1" max="10" value="5">
+                                    </div>
+                                    <div class="mood-dropdowns-grid">
+                                        <div class="dropdown-group">
+                                            <label>Category</label>
+                                            <select class="mood-cat">
+                                                <option value="">Select Category...</option>
+                                                <option value="positive_high_energy">Positive High Energy</option>
+                                                <option value="neutral_balanced">Neutral Balanced</option>
+                                                <option value="low_energy_tired">Low Energy Tired</option>
+                                                <option value="negative_heavy">Negative Heavy</option>
+                                                <option value="cognitive">Cognitive</option>
+                                            </select>
+                                        </div>
+                                        <div class="dropdown-group">
+                                            <label>Feeling</label>
+                                            <select class="mood-feel" disabled>
+                                                <option value="">Select Category First</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Night -->
+                        <div class="period-card" data-period="night">
+                            <div class="period-badge night-badge">
+                                🌙 Night (9-6)
+                                <button class="add-period-mood-btn" data-period="night" title="Add Mood"><i class="fas fa-plus"></i></button>
+                            </div>
+                            <div class="period-content" id="night-moods">
+                                <div class="mood-entry" data-index="0">
+                                    <button class="remove-mood-entry-btn" title="Remove"><i class="fas fa-times"></i></button>
+                                    <div class="slider-group">
+                                        <div class="flex-between">
+                                            <label>Mood Level</label>
+                                            <span class="mood-val-display">5 😐</span>
+                                        </div>
+                                        <input type="range" class="mood-slider" min="1" max="10" value="5">
+                                    </div>
+                                    <div class="mood-dropdowns-grid">
+                                        <div class="dropdown-group">
+                                            <label>Category</label>
+                                            <select class="mood-cat">
+                                                <option value="">Select Category...</option>
+                                                <option value="positive_high_energy">Positive High Energy</option>
+                                                <option value="neutral_balanced">Neutral Balanced</option>
+                                                <option value="low_energy_tired">Low Energy Tired</option>
+                                                <option value="negative_heavy">Negative Heavy</option>
+                                                <option value="cognitive">Cognitive</option>
+                                            </select>
+                                        </div>
+                                        <div class="dropdown-group">
+                                            <label>Feeling</label>
+                                            <select class="mood-feel" disabled>
+                                                <option value="">Select Category First</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 3. Energy Card -->
+                <div class="card energy-card">
+                    <div class="card-header">
+                        <i class="fas fa-bolt"></i> <span class="card-title">Energy Level</span>
+                    </div>
+                    <div class="slider-container">
+                        <input type="range" id="energy-level" class="energy-slider" min="0" max="10" value="5">
+                        <div class="slider-value">
+                            <span id="energy-val">5</span> ⚡ Moderate
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Reason <small id="energy-reason-count" class="char-count">(0/300)</small></label>
+                        <textarea id="energy-reason" rows="2" style="resize: vertical; width: 100%;" placeholder="What affected your energy?"></textarea>
+                    </div>
+                </div>
+
+                <!-- 4. Stress Card -->
+                <div class="card stress-card">
+                    <div class="card-header">
+                        <i class="fas fa-tired"></i> <span class="card-title">Stress Level</span>
+                    </div>
+                    <div class="slider-container">
+                        <input type="range" id="stress-level" class="stress-slider" min="0" max="10" value="5">
+                        <div class="slider-value">
+                            <span id="stress-val">5</span> 😐 Moderate
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Reason <small id="stress-reason-count" class="char-count">(0/300)</small></label>
+                        <textarea id="stress-reason" rows="2" style="resize: vertical; width: 100%;" placeholder="What is causing stress?"></textarea>
+                    </div>
+                </div>
+
+                <!-- 5. Meditation Card -->
+                <div class="card meditation-card">
+                    <div class="card-header">
+                        <i class="fas fa-spa"></i> <span class="card-title">Meditation</span>
+                    </div>
+                    <div class="form-group">
+                        <label>Meditation Type/Name</label>
+                        <input type="text" id="meditation-status" value="No" placeholder="e.g. Vipassana, Mindfulness, or No">
+                    </div>
+                    <div class="form-group">
+                        <label>Duration (minutes)</label>
+                        <input type="number" id="meditation-duration" value="0" min="0" placeholder="0">
+                    </div>
+                </div>
+
+            </section>
+
+            <!-- 4. Diet Tab -->
+            <section id="tab-diet" class="tab-content">
+
+                <!-- Diet -->
+                <div class="card">
+                    <h3><i class="fas fa-utensils"></i> Diet & Nutrition</h3>
+
+                    <div class="form-group">
+                        <label><i class="fas fa-coffee"></i> Breakfast</label>
+                        <input type="text" id="breakfast" list="breakfast-list" placeholder="What did you have?">
+                        <datalist id="breakfast-list"></datalist>
+                    </div>
+
+                    <div class="form-group">
+                        <label><i class="fas fa-sun"></i> Lunch</label>
+                        <input type="text" id="lunch" list="lunch-list" placeholder="What did you have?">
+                        <datalist id="lunch-list"></datalist>
+                    </div>
+
+                    <div class="form-group">
+                        <label><i class="fas fa-moon"></i> Dinner</label>
+                        <input type="text" id="dinner" list="dinner-list" placeholder="What did you have?">
+                        <datalist id="dinner-list"></datalist>
+                    </div>
+
+                    <div class="form-group">
+                        <label><i class="fas fa-cookie-bite"></i> Snacks</label>
+                        <input type="text" id="snacks" list="snacks-list" placeholder="Any snacks?">
+                        <datalist id="snacks-list"></datalist>
+                    </div>
+                </div>
+
+                <!-- Personal Care -->
+                <div class="card">
+                    <div class="card-header-flex">
+                        <h3><i class="fas fa-sparkles"></i> Personal Care</h3>
+                        <button id="import-last-care" class="text-btn"><i class="fas fa-file-import"></i> Import Last</button>
+                    </div>
+                    <div class="grid-2">
+                        <div class="form-group">
+                            <label>Face Product</label>
+                            <input type="text" id="face-name" list="face-name-list" placeholder="Name (e.g. Cetaphil)">
+                            <datalist id="face-name-list"></datalist>
+                        </div>
+                        <div class="form-group">
+                            <label>Brand</label>
+                            <input type="text" id="face-brand" list="face-brand-list" placeholder="Brand">
+                            <datalist id="face-brand-list"></datalist>
+                        </div>
+                        <div class="form-group">
+                            <label>Hair Product</label>
+                            <input type="text" id="hair-name" list="hair-name-list" placeholder="Name (e.g. Pantene)">
+                            <datalist id="hair-name-list"></datalist>
+                        </div>
+                        <div class="form-group">
+                            <label>Brand</label>
+                            <input type="text" id="hair-brand" list="hair-brand-list" placeholder="Brand">
+                            <datalist id="hair-brand-list"></datalist>
+                        </div>
+                    </div>
+                    <div class="form-group mt-2">
+                        <label>Hair Oil</label>
+                        <input type="text" id="hair-oil" list="hair-oil-list" placeholder="e.g. Coconut Oil">
+                        <datalist id="hair-oil-list"></datalist>
+                    </div>
+                    <div class="form-group mt-2">
+                        <label>Skincare Routine <small id="skincare-routine-count" class="char-counter"></small></label>
+                        <textarea id="skincare-routine" placeholder="Describe routine..." rows="2"></textarea>
+                    </div>
+                </div>
+
+            </section>
+
+            <!-- 5. Summary Tab -->
+            <section id="tab-summary" class="tab-content">
+
+                <!-- Daily Summary -->
+                <div class="card">
+                    <h3><i class="fas fa-book-open"></i> Daily Summary</h3>
+
+                    <div class="form-group">
+                        <label>Key Events <small id="key-events-count" class="char-counter"></small></label>
+                        <textarea id="key-events" rows="2" placeholder="Highlight significant moments"></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Activity Summary <small id="daily-summary-count"
+                                class="char-counter"></small></label>
+                        <textarea id="daily-summary" rows="9" placeholder="Summarize activities"></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Overall Experience <small id="overall-exp-count"
+                                class="char-counter"></small></label>
+                        <textarea id="overall-exp" rows="3" placeholder="How was your day?"></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Other Notes?</label>
+                        <select id="other-notes-status">
+                            <option value="No">No</option>
+                            <option value="Yes">Yes</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Activities -->
+                <div class="card">
+                    <h3><i class="fas fa-calendar-check"></i> Activities & Productivity</h3>
+
+                    <div class="form-group">
+                        <label>Tasks Completed <small id="tasks-completed-count"
+                                class="char-counter"></small></label>
+                        <textarea id="tasks-completed" placeholder="List tasks..." rows="3"></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Travel Destination</label>
+                        <input type="text" id="travel-dest" placeholder="Where did you go?">
+                        <div id="travel-suggestions" class="suggestion-chips-container" data-input="travel-dest">
+                            <span class="chip">School</span><span class="chip">Village</span><span class="chip">Home</span><span class="chip">Farm</span>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label><i class="fas fa-mobile-alt"></i> Screen Time</label>
+                        <input type="text" id="screen-time" placeholder="e.g. 1h20m or 80m">
+                    </div>
+
+                    <h5 class="mt-2">Top 5 Apps Used</h5>
+                    <div id="top-apps-container">
+                        <div class="app-row flex-row">
+                            <span class="rank-circle">1</span>
+                            <input type="text" class="app-name" list="app-names-list" placeholder="App">
+                            <input type="text" class="app-time" placeholder="e.g. 1h20m">
+                        </div>
+                        <div class="app-row flex-row">
+                            <span class="rank-circle">2</span>
+                            <input type="text" class="app-name" list="app-names-list" placeholder="App">
+                            <input type="text" class="app-time" placeholder="e.g. 45m">
+                        </div>
+                        <div class="app-row flex-row">
+                            <span class="rank-circle">3</span>
+                            <input type="text" class="app-name" list="app-names-list" placeholder="App">
+                            <input type="text" class="app-time" placeholder="e.g. 30m">
+                        </div>
+                        <div class="app-row flex-row">
+                            <span class="rank-circle">4</span>
+                            <input type="text" class="app-name" list="app-names-list" placeholder="App">
+                            <input type="text" class="app-time" placeholder="e.g. 20m">
+                        </div>
+                        <div class="app-row flex-row">
+                            <span class="rank-circle">5</span>
+                            <input type="text" class="app-name" list="app-names-list" placeholder="App">
+                            <input type="text" class="app-time" placeholder="e.g. 15m">
+                        </div>
+                    </div>
+                    <datalist id="app-names-list"></datalist>
+
+                    <div class="form-group mt-2">
+                        <label>App Usage Intent</label>
+                        <textarea id="app-usage-intent" rows="3" placeholder="Productive, Entertainment..."></textarea>
+                    </div>
+                </div>
+
+            </section>
+
+            <!-- 6. History Tab -->
+            <section id="tab-history" class="tab-content">
+                <div class="history-search-bar">
+                    <div class="search-input-wrapper">
+                        <i class="fas fa-search"></i>
+                        <input type="search" id="search-history" placeholder="Search diary entries">
+                        <button id="search-clear" class="hidden" type="button" aria-label="Clear search">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <div class="filter-chips" role="group" aria-label="History filters">
+                        <button class="filter-chip active" type="button" data-filter="all">All</button>
+                        <button class="filter-chip" type="button" data-filter="week">This Week</button>
+                        <button class="filter-chip" type="button" data-filter="happy">Good Mood</button>
+                        <button class="filter-chip" type="button" data-filter="complete">Complete</button>
+                    </div>
+                </div>
+                <div id="history-list" class="history-list">
+                    <!-- History injected here -->
+                </div>
+            </section>
+
+            <!-- 7. Decisions Tab -->
+            <section id="tab-decisions" class="tab-content">
+                <div class="card">
+                    <div class="card-header-flex">
+                        <h3><i class="fas fa-lightbulb"></i> Decisions</h3>
+                        <button id="add-decision-json-btn" class="quick-add-btn"><i class="fas fa-plus"></i> Add JSON</button>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Paste JSON (will be added to array)</label>
+                        <textarea id="decisions-json" rows="3" placeholder='Paste any JSON object or array here'></textarea>
+                        <small style="color: var(--text-secondary); font-size: 0.8rem; margin-top: 4px; display: block;">
+                            <i class="fas fa-info-circle"></i> Decisions are saved per date. Change date to see different decisions.
+                        </small>
+                    </div>
+
+                    <div id="decisions-container" class="decisions-container">
+                        <!-- Decisions will be added here -->
+                    </div>
+                </div>
+            </section>
+
+        </main>
+
+        <!-- Bottom Navigation -->
+        <nav class="bottom-nav">
+            <button class="nav-item active" data-target="tab-basic">
+                <i class="fas fa-home"></i>
+                <span>Basic</span>
+            </button>
+            <button class="nav-item" data-target="tab-body">
+                <i class="fas fa-dumbbell"></i>
+                <span>Body</span>
+            </button>
+            <button class="nav-item" data-target="tab-mental">
+                <i class="fas fa-brain"></i>
+                <span>Mental</span>
+            </button>
+            <button class="nav-item" data-target="tab-diet">
+                <i class="fas fa-utensils"></i>
+                <span>Diet</span>
+            </button>
+            <button class="nav-item" data-target="tab-summary">
+                <i class="fas fa-clipboard-list"></i>
+                <span>Summary</span>
+            </button>
+            <button class="nav-item" data-target="tab-decisions">
+                <i class="fas fa-lightbulb"></i>
+                <span>Decisions</span>
+            </button>
+            <button class="nav-item" data-target="tab-history">
+                <i class="fas fa-book"></i>
+                <span>History</span>
+            </button>
+        </nav>
+
+        <!-- Toast Notification -->
+        <div id="toast" class="toast hidden">Item Saved</div>
+
+        <!-- Loading Overlay -->
+        <div id="loading" class="loading-overlay hidden">
+            <div class="spinner"></div>
+        </div>
+
+        <!-- Import Data Input (Hidden) -->
+        <input type="file" id="import-file" accept=".json" style="display:none" multiple>
+        <input type="file" id="import-backup-file" accept=".json" style="display:none">
+
+    </div>
+
+    <!-- Scripts -->
+    <script src="js/storage.js"></script>
+    <script src="js/ui.js"></script>
+    <script src="js/mood-handler.js"></script>
+    <script src="js/decisions-handler.js"></script>
+    <script src="js/app.js"></script>
+</body>
+
+</html>

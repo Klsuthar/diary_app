@@ -1,0 +1,117 @@
+{
+  "version": "4.0",
+  "date": "2026-01-01",
+  "day_id": 7500,
+  "weekday": "Thursday",
+  "environment": {
+    "temperature_c": "20-30",
+    "air_quality_index": 80,
+    "humidity_percent": 60,
+    "uv_index": 9,
+    "weather_condition": "Sunny",
+    "environment_experience": "Pleasant weather"
+  },
+  "body_measurements": {
+    "weight_kg": 72,
+    "height_cm": 178,
+    "chest": 90,
+    "belly": 89
+  },
+  "health_and_fitness": {
+    "sleep_hours": "8:00",
+    "sleep_quality": 8,
+    "sleep_quality_description": "Deep sleep",
+    "steps_count": 10000,
+    "steps_distance_km": 7.5,
+    "kilocalorie": 2200,
+    "water_intake_liters": 3.5,
+    "medications_taken": "None",
+    "physical_symptoms": "No"
+  },
+  "mental_and_emotional_health": {
+    "mental_state": "Positive",
+    "mental_state_reason": "Had a productive day",
+    "mood_timeline": {
+      "morning": {
+        "mood_level": 8,
+        "mood_category": "positive_high_energy",
+        "mood_feeling": "energetic"
+      },
+      "afternoon": {
+        "mood_level": 7,
+        "mood_category": "positive_high_energy",
+        "mood_feeling": "motivated"
+      },
+      "evening": {
+        "mood_level": 6,
+        "mood_category": "neutral_balanced",
+        "mood_feeling": "calm"
+      },
+      "night": {
+        "mood_level": 5,
+        "mood_category": "low_energy_tired",
+        "mood_feeling": "tired"
+      }
+    },
+    "energy_level": 7,
+    "energy_reason": "Good sleep and exercise",
+    "stress_level": 3,
+    "stress_reason": "Minor work deadline",
+    "meditation_status": "Yes",
+    "meditation_duration_min": 15
+  },
+  "personal_care": {
+    "face_product_name": "Cleanser",
+    "face_product_brand": "Cetaphil",
+    "hair_product_name": "Shampoo",
+    "hair_product_brand": "Dove",
+    "hair_oil": "Coconut oil",
+    "skincare_routine": "Morning and night"
+  },
+  "diet_and_nutrition": {
+    "breakfast": "Oatmeal with fruits",
+    "lunch": "Chicken salad",
+    "dinner": "Rice and vegetables",
+    "additional_items": "Protein shake, almonds"
+  },
+  "activities_and_productivity": {
+    "tasks_today_english": "Completed project report, gym workout, grocery shopping",
+    "travel_destination": "Office and gym",
+    "phone_screen_on_hr": "5:30",
+    "most_used_apps": [
+      {
+        "rank": 1,
+        "name": "YouTube",
+        "time": "2:30"
+      },
+      {
+        "rank": 2,
+        "name": "Instagram",
+        "time": "1:45"
+      },
+      {
+        "rank": 3,
+        "name": "WhatsApp",
+        "time": "1:00"
+      },
+      {
+        "rank": 4,
+        "name": "Chrome",
+        "time": "0:45"
+      },
+      {
+        "rank": 5,
+        "name": "Spotify",
+        "time": "0:30"
+      }
+    ],
+    "app_usage_intent": "Mix of productive and entertainment"
+  },
+  "decisions": [  ],
+  "additional_notes": {
+    "key_events": "Team meeting, gym session, dinner with family",
+    "other_note_status": "No"
+  },
+  "daily_activity_summary": "Productive day with good balance of work, exercise, and family time. Completed all planned tasks.",
+  "overall_day_experience": "Overall a great day. Felt energetic in the morning, stayed productive throughout, and ended with quality family time. Looking forward to tomorrow."
+}

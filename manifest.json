@@ -1,0 +1,23 @@
+{
+    "name": "My Personal Diary",
+    "short_name": "Diary",
+    "version": "4.2",
+    "description": "Track your daily life, health, mood, and activities",
+    "start_url": "./index.html",
+    "display": "standalone",
+    "background_color": "#0f172a",
+    "theme_color": "#f59e0b",
+    "orientation": "portrait",
+    "icons": [
+        {
+            "src": "images/logo256.png",
+            "sizes": "192x192",
+            "type": "image/png"
+        },
+        {
+            "src": "images/logo512.png",
+            "sizes": "512x512",
+            "type": "image/png"
+        }
+    ]
+}
