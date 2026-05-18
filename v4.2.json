@@ -1,15 +1,15 @@
 {
-  "version": "4.1",
-  "date": "2026-01-01",
-  "day_id": 7500,
-  "weekday": "Thursday",
+  "version": "4.2",
+  "date": "2026-05-18",
+  "day_id": 8354,
+  "weekday": "Monday",
   "environment": {
-    "temperature_c": "20-30",
-    "air_quality_index": 80,
-    "humidity_percent": 60,
-    "uv_index": 9,
-    "weather_condition": "Sunny",
-    "environment_experience": "Pleasant weather"
+    "temperature_c": "15-25",
+    "air_quality_index": 0,
+    "humidity_percent": 0,
+    "uv_index": 0,
+    "weather_condition": "",
+    "environment_experience": ""
   },
   "body_measurements": {
     "weight_kg": 72,
@@ -25,8 +25,18 @@
     "steps_distance_km": 7.5,
     "kilocalorie": 2200,
     "water_intake_liters": 3.5,
-    "medications_taken": "None",
-    "physical_symptoms": "No"
+    "medications_taken": {
+      "morning": "",
+      "afternoon": "Paracetamol",
+      "evening": "",
+      "night": "Levocetirizine"
+    },
+    "physical_symptoms": {
+      "morning": "Light cough",
+      "afternoon": "Headache",
+      "evening": "",
+      "night": "Fever and body pain"
+    }
   },
   "mental_and_emotional_health": {
     "mental_state": "Positive",
@@ -69,9 +79,18 @@
     "skincare_routine": "Morning and night"
   },
   "diet_and_nutrition": {
-    "breakfast": "Oatmeal with fruits",
-    "lunch": "Chicken salad",
-    "dinner": "Rice and vegetables",
+    "breakfast": {
+      "meal": "Dal, roti, and vegetables",
+      "appetite_index": 7
+    },
+    "lunch": {
+      "meal": "Chapati and vegetables",
+      "appetite_index": 5
+    },
+    "dinner": {
+      "meal": "Rice and vegetables",
+      "appetite_index": 8
+    },
     "additional_items": "Protein shake, almonds"
   },
   "activities_and_productivity": {
@@ -107,7 +126,7 @@
     ],
     "app_usage_intent": "Mix of productive and entertainment"
   },
-  "decisions": [  ],
+  "decisions": [],
   "additional_notes": {
     "key_events": "Team meeting, gym session, dinner with family",
     "other_note_status": "No"
