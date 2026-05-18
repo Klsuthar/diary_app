@@ -285,7 +285,24 @@
                     <label class="field-label">
                         <i class="fas fa-pills"></i> Medications
                     </label>
-                    <textarea id="medications" rows="2" style="resize: vertical; width: 100%;" placeholder="List medications taken today..."></textarea>
+                    <div class="period-input-grid">
+                        <div class="period-input">
+                            <label>Morning</label>
+                            <input type="text" id="medications-morning" placeholder="Medicine">
+                        </div>
+                        <div class="period-input">
+                            <label>Afternoon</label>
+                            <input type="text" id="medications-afternoon" placeholder="Medicine">
+                        </div>
+                        <div class="period-input">
+                            <label>Evening</label>
+                            <input type="text" id="medications-evening" placeholder="Medicine">
+                        </div>
+                        <div class="period-input">
+                            <label>Night</label>
+                            <input type="text" id="medications-night" placeholder="Medicine">
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Symptoms Card -->
@@ -293,7 +310,24 @@
                     <label class="field-label">
                         <i class="fas fa-stethoscope"></i> Physical Symptoms
                     </label>
-                    <textarea id="symptoms" rows="2" style="resize: vertical; width: 100%;" placeholder="Any physical symptoms or discomfort?"></textarea>
+                    <div class="period-input-grid">
+                        <div class="period-input">
+                            <label>Morning</label>
+                            <input type="text" id="symptoms-morning" placeholder="Symptoms">
+                        </div>
+                        <div class="period-input">
+                            <label>Afternoon</label>
+                            <input type="text" id="symptoms-afternoon" placeholder="Symptoms">
+                        </div>
+                        <div class="period-input">
+                            <label>Evening</label>
+                            <input type="text" id="symptoms-evening" placeholder="Symptoms">
+                        </div>
+                        <div class="period-input">
+                            <label>Night</label>
+                            <input type="text" id="symptoms-night" placeholder="Symptoms">
+                        </div>
+                    </div>
                 </div>
 
             </section>
@@ -546,18 +580,39 @@
                         <label><i class="fas fa-coffee"></i> Breakfast</label>
                         <input type="text" id="breakfast" list="breakfast-list" placeholder="What did you have?">
                         <datalist id="breakfast-list"></datalist>
+                        <div class="appetite-control">
+                            <input type="range" id="breakfast-appetite" min="0" max="10" value="5" class="slider appetite-slider">
+                            <div class="slider-value">
+                                <span id="breakfast-appetite-value">5</span>
+                                <span>Appetite</span>
+                            </div>
+                        </div>
                     </div>
 
                     <div class="form-group">
                         <label><i class="fas fa-sun"></i> Lunch</label>
                         <input type="text" id="lunch" list="lunch-list" placeholder="What did you have?">
                         <datalist id="lunch-list"></datalist>
+                        <div class="appetite-control">
+                            <input type="range" id="lunch-appetite" min="0" max="10" value="5" class="slider appetite-slider">
+                            <div class="slider-value">
+                                <span id="lunch-appetite-value">5</span>
+                                <span>Appetite</span>
+                            </div>
+                        </div>
                     </div>
 
                     <div class="form-group">
                         <label><i class="fas fa-moon"></i> Dinner</label>
                         <input type="text" id="dinner" list="dinner-list" placeholder="What did you have?">
                         <datalist id="dinner-list"></datalist>
+                        <div class="appetite-control">
+                            <input type="range" id="dinner-appetite" min="0" max="10" value="5" class="slider appetite-slider">
+                            <div class="slider-value">
+                                <span id="dinner-appetite-value">5</span>
+                                <span>Appetite</span>
+                            </div>
+                        </div>
                     </div>
 
                     <div class="form-group">

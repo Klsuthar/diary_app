@@ -23,6 +23,7 @@ class UI {
         this.selectedEntries = new Set();
         this.longPressTimer = null;
         this.currentFilter = 'all';
+        this.periods = ['morning', 'afternoon', 'evening', 'night'];
 
         this.initElements();
         this.initElements();
@@ -556,6 +557,64 @@ class UI {
         return '\u{1F622}';
     }
 
+    getPeriodObject(prefix) {
+        return this.periods.reduce((result, period) => {
+            result[period] = document.getElementById(`${prefix}-${period}`)?.value || "";
+            return result;
+        }, {});
+    }
+
+    setPeriodObject(prefix, value) {
+        this.periods.forEach((period, index) => {
+            const el = document.getElementById(`${prefix}-${period}`);
+            if (!el) return;
+
+            if (value && typeof value === 'object' && !Array.isArray(value)) {
+                el.value = value[period] || "";
+            } else {
+                el.value = index === 0 ? (value || "") : "";
+            }
+        });
+    }
+
+    hasPeriodObject(value) {
+        return !!value && typeof value === 'object' && !Array.isArray(value) &&
+            this.periods.every(period => Object.prototype.hasOwnProperty.call(value, period));
+    }
+
+    getMealEntry(mealId) {
+        const meal = document.getElementById(mealId)?.value || "";
+        const appetiteValue = document.getElementById(`${mealId}-appetite`)?.value;
+        return {
+            meal,
+            appetite_index: appetiteValue !== undefined && appetiteValue !== "" ? Number(appetiteValue) : null
+        };
+    }
+
+    setMealEntry(mealId, value) {
+        const mealValue = value && typeof value === 'object' && !Array.isArray(value)
+            ? value.meal
+            : value;
+        const appetiteValue = value && typeof value === 'object' && !Array.isArray(value)
+            ? value.appetite_index
+            : null;
+
+        const mealEl = document.getElementById(mealId);
+        if (mealEl) mealEl.value = mealValue || "";
+
+        const appetiteEl = document.getElementById(`${mealId}-appetite`);
+        const appetiteDisplay = document.getElementById(`${mealId}-appetite-value`);
+        if (appetiteEl) {
+            appetiteEl.value = appetiteValue === null || appetiteValue === undefined ? 5 : appetiteValue;
+            if (appetiteDisplay) appetiteDisplay.innerText = appetiteEl.value;
+        }
+    }
+
+    isMealEntryComplete(value) {
+        return !!value && typeof value === 'object' && !Array.isArray(value) &&
+            !!value.meal && value.appetite_index !== null && value.appetite_index !== undefined;
+    }
+
     isEntryComplete(entry) {
         // Check Basic tab
         const basicComplete = entry.environment?.temperature_c && 
@@ -577,8 +636,8 @@ class UI {
                            entry.health_and_fitness?.steps_distance_km !== null &&
                            entry.health_and_fitness?.kilocalorie !== null &&
                            entry.health_and_fitness?.water_intake_liters !== null &&
-                           entry.health_and_fitness?.medications_taken &&
-                           entry.health_and_fitness?.physical_symptoms;
+                           this.hasPeriodObject(entry.health_and_fitness?.medications_taken) &&
+                           this.hasPeriodObject(entry.health_and_fitness?.physical_symptoms);
         
         // Check Mental tab - Handle arrays
         const allMoodTimelinesComplete = ['morning', 'afternoon', 'evening', 'night'].every(period => {
@@ -599,9 +658,9 @@ class UI {
                              entry.mental_and_emotional_health?.meditation_duration_min !== null;
         
         // Check Diet tab
-        const dietComplete = entry.diet_and_nutrition?.breakfast && 
-                           entry.diet_and_nutrition?.lunch && 
-                           entry.diet_and_nutrition?.dinner && 
+        const dietComplete = this.isMealEntryComplete(entry.diet_and_nutrition?.breakfast) &&
+                           this.isMealEntryComplete(entry.diet_and_nutrition?.lunch) &&
+                           this.isMealEntryComplete(entry.diet_and_nutrition?.dinner) &&
                            entry.diet_and_nutrition?.additional_items &&
                            entry.personal_care?.face_product_name &&
                            entry.personal_care?.face_product_brand &&
@@ -704,9 +763,16 @@ class UI {
             
             // Collect diet suggestions
             if (entry.diet_and_nutrition) {
-                if (entry.diet_and_nutrition.breakfast) dietSuggestions['breakfast-list'].add(entry.diet_and_nutrition.breakfast);
-                if (entry.diet_and_nutrition.lunch) dietSuggestions['lunch-list'].add(entry.diet_and_nutrition.lunch);
-                if (entry.diet_and_nutrition.dinner) dietSuggestions['dinner-list'].add(entry.diet_and_nutrition.dinner);
+                const breakfast = entry.diet_and_nutrition.breakfast;
+                const lunch = entry.diet_and_nutrition.lunch;
+                const dinner = entry.diet_and_nutrition.dinner;
+                const breakfastMeal = typeof breakfast === 'object' ? breakfast?.meal : breakfast;
+                const lunchMeal = typeof lunch === 'object' ? lunch?.meal : lunch;
+                const dinnerMeal = typeof dinner === 'object' ? dinner?.meal : dinner;
+
+                if (breakfastMeal) dietSuggestions['breakfast-list'].add(breakfastMeal);
+                if (lunchMeal) dietSuggestions['lunch-list'].add(lunchMeal);
+                if (dinnerMeal) dietSuggestions['dinner-list'].add(dinnerMeal);
                 if (entry.diet_and_nutrition.additional_items) dietSuggestions['snacks-list'].add(entry.diet_and_nutrition.additional_items);
             }
         });
@@ -882,19 +948,15 @@ class UI {
         const getVal = (id) => document.getElementById(id)?.value || "";
         const getNum = (id) => document.getElementById(id)?.value ? Number(document.getElementById(id).value) : null;
 
-        // Mood Timeline - Collect as arrays
+        // Mood Timeline - v4.2 stores one mood object per period
         const getMoodParams = (period) => {
             const container = document.getElementById(`${period}-moods`);
-            if (!container) return [];
-            const entries = [];
-            container.querySelectorAll('.mood-entry').forEach(entry => {
-                entries.push({
-                    mood_level: Number(entry.querySelector('.mood-slider').value) || 5,
-                    mood_category: entry.querySelector('.mood-cat').value || "",
-                    mood_feeling: entry.querySelector('.mood-feel').value || ""
-                });
-            });
-            return entries;
+            const entry = container?.querySelector('.mood-entry');
+            return {
+                mood_level: Number(entry?.querySelector('.mood-slider')?.value) || 5,
+                mood_category: entry?.querySelector('.mood-cat')?.value || "",
+                mood_feeling: entry?.querySelector('.mood-feel')?.value || ""
+            };
         };
 
         // Apps
@@ -912,7 +974,7 @@ class UI {
         const dayId = Number.isNaN(d.getTime()) ? 0 : Math.ceil((d - this.referenceDate) / (1000 * 60 * 60 * 24));
 
         return {
-            version: "4.0",
+            version: "4.2",
             date: this.currentDate,
             day_id: dayId,
             weekday: Number.isNaN(d.getTime()) ? "" : d.toLocaleDateString('en-US', { weekday: 'long' }),
@@ -941,8 +1003,8 @@ class UI {
                 steps_distance_km: getNum('distance-km'),
                 kilocalorie: getNum('calories'),
                 water_intake_liters: getNum('water-intake'),
-                medications_taken: getVal('medications'),
-                physical_symptoms: getVal('symptoms')
+                medications_taken: this.getPeriodObject('medications'),
+                physical_symptoms: this.getPeriodObject('symptoms')
             },
 
             mental_and_emotional_health: {
@@ -972,9 +1034,9 @@ class UI {
             },
 
             diet_and_nutrition: {
-                breakfast: getVal('breakfast'),
-                lunch: getVal('lunch'),
-                dinner: getVal('dinner'),
+                breakfast: this.getMealEntry('breakfast'),
+                lunch: this.getMealEntry('lunch'),
+                dinner: this.getMealEntry('dinner'),
                 additional_items: getVal('snacks')
             },
 
@@ -986,12 +1048,12 @@ class UI {
                 app_usage_intent: getVal('app-usage-intent')
             },
 
+            decisions: window.decisionsHandler ? window.decisionsHandler.collect() : [],
+
             additional_notes: {
                 key_events: getVal('key-events'),
                 other_note_status: getVal('other-notes-status')
             },
-
-            decisions: window.decisionsHandler ? window.decisionsHandler.collect() : [],
 
             daily_activity_summary: getVal('daily-summary'),
             overall_day_experience: getVal('overall-exp')
@@ -1044,7 +1106,7 @@ class UI {
             // Trigger visual updates for sliders
             document.getElementById('aqi')?.dispatchEvent(new Event('input'));
             document.getElementById('uv-index')?.dispatchEvent(new Event('input'));
-            if (document.getElementById('humidity-value')) document.getElementById('humidity-value').innerText = data.environment.humidity_percent || 50;
+            if (document.getElementById('humidity-value')) document.getElementById('humidity-value').innerText = data.environment.humidity_percent ?? 0;
 
             setVal('env-experience', data.environment.environment_experience);
         }
@@ -1090,8 +1152,8 @@ class UI {
                 });
             }
 
-            setVal('medications', data.health_and_fitness.medications_taken);
-            setVal('symptoms', data.health_and_fitness.physical_symptoms);
+            this.setPeriodObject('medications', data.health_and_fitness.medications_taken);
+            this.setPeriodObject('symptoms', data.health_and_fitness.physical_symptoms);
         }
 
         // Mental
@@ -1213,9 +1275,9 @@ class UI {
         }
 
         if (data.diet_and_nutrition) {
-            setVal('breakfast', data.diet_and_nutrition.breakfast);
-            setVal('lunch', data.diet_and_nutrition.lunch);
-            setVal('dinner', data.diet_and_nutrition.dinner);
+            this.setMealEntry('breakfast', data.diet_and_nutrition.breakfast);
+            this.setMealEntry('lunch', data.diet_and_nutrition.lunch);
+            this.setMealEntry('dinner', data.diet_and_nutrition.dinner);
             setVal('snacks', data.diet_and_nutrition.additional_items);
         }
 
@@ -1276,7 +1338,7 @@ class UI {
             if (el.type !== 'date') el.value = "";
         });
         document.querySelectorAll('input[type="range"]').forEach(el => {
-            el.value = (el.min == 1) ? 5 : 0;
+            el.value = (el.min == 1 || el.classList.contains('appetite-slider')) ? 5 : 0;
             const span = el.parentElement.querySelector('span') || document.getElementById(el.id.replace('level', 'val').replace('quality', 'qual-val').replace('index', 'val'));
             if (span) span.innerText = el.value;
         });
@@ -1300,16 +1362,17 @@ class UI {
         };
         setIfEmpty('temp-min', '15');
         setIfEmpty('temp-max', '25');
-        setIfEmpty('aqi', '100');
-        setIfEmpty('humidity', '50');
-        setIfEmpty('uv-index', '5');
-        setIfEmpty('weight', '70');
+        setIfEmpty('aqi', '0');
+        setIfEmpty('humidity', '0');
+        setIfEmpty('uv-index', '0');
+        setIfEmpty('weight', '72');
         setIfEmpty('height', '178');
         setIfEmpty('chest', '90');
         setIfEmpty('belly', '89');
         setIfEmpty('sleep-hours', '8:00');
-        setIfEmpty('medications', 'No');
-        setIfEmpty('symptoms', 'No');
+        setIfEmpty('breakfast-appetite', '5');
+        setIfEmpty('lunch-appetite', '5');
+        setIfEmpty('dinner-appetite', '5');
         setIfEmpty('meditation-status', 'No');
         setIfEmpty('meditation-duration', '0');
         setIfEmpty('other-notes-status', 'No');
@@ -1325,6 +1388,15 @@ class UI {
             document.getElementById('uv-value').innerText = uvEl.value;
             this.updateUVLabel(parseInt(uvEl.value), document.getElementById('uv-label'));
         }
+        const humidityEl = document.getElementById('humidity');
+        if (humidityEl && document.getElementById('humidity-value')) {
+            document.getElementById('humidity-value').innerText = humidityEl.value;
+        }
+        ['breakfast', 'lunch', 'dinner'].forEach(mealId => {
+            const appetiteEl = document.getElementById(`${mealId}-appetite`);
+            const appetiteDisplay = document.getElementById(`${mealId}-appetite-value`);
+            if (appetiteEl && appetiteDisplay) appetiteDisplay.innerText = appetiteEl.value;
+        });
     }
 
     saveEntry(showToast = false) {
@@ -1725,9 +1797,9 @@ class UI {
                     document.getElementById('temp-min').value = temp;
                 }
 
-                document.getElementById('aqi').value = prevData.environment.air_quality_index || 50;
-                document.getElementById('humidity').value = prevData.environment.humidity_percent || 50;
-                document.getElementById('uv-index').value = prevData.environment.uv_index || 0;
+                document.getElementById('aqi').value = prevData.environment.air_quality_index ?? 0;
+                document.getElementById('humidity').value = prevData.environment.humidity_percent ?? 0;
+                document.getElementById('uv-index').value = prevData.environment.uv_index ?? 0;
                 document.getElementById('env-experience').value = prevData.environment.environment_experience || "";
 
                 document.getElementById('aqi').dispatchEvent(new Event('input'));
@@ -1801,8 +1873,8 @@ class UI {
                            data.health_and_fitness.steps_distance_km !== null &&
                            data.health_and_fitness.kilocalorie !== null &&
                            data.health_and_fitness.water_intake_liters !== null &&
-                           data.health_and_fitness.medications_taken &&
-                           data.health_and_fitness.physical_symptoms;
+                           this.hasPeriodObject(data.health_and_fitness.medications_taken) &&
+                           this.hasPeriodObject(data.health_and_fitness.physical_symptoms);
         document.querySelector('[data-target="tab-body"]')?.classList.toggle('incomplete', !bodyComplete);
         
         // Check Mental tab - ALL fields required
@@ -1825,9 +1897,9 @@ class UI {
         document.querySelector('[data-target="tab-mental"]')?.classList.toggle('incomplete', !mentalComplete);
         
         // Check Diet tab - ALL fields required
-        const dietComplete = data.diet_and_nutrition.breakfast && 
-                           data.diet_and_nutrition.lunch && 
-                           data.diet_and_nutrition.dinner && 
+        const dietComplete = this.isMealEntryComplete(data.diet_and_nutrition.breakfast) &&
+                           this.isMealEntryComplete(data.diet_and_nutrition.lunch) &&
+                           this.isMealEntryComplete(data.diet_and_nutrition.dinner) &&
                            data.diet_and_nutrition.additional_items &&
                            data.personal_care.face_product_name &&
                            data.personal_care.face_product_brand &&
