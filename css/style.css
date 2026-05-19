@@ -2957,9 +2957,11 @@ input[type="range"]::-moz-range-thumb {
     font-size: 0.9rem;
 }
 
-#tab-mental .add-period-mood-btn,
+#tab-mental .add-period-mood-btn {
+    display: flex;
+}
 #tab-mental .remove-mood-entry-btn {
-    display: none;
+    display: flex;
 }
 
 @media (min-width: 760px) {
@@ -3186,4 +3188,30 @@ body {
 /* Ensure the expand button aligns properly */
 #daily-summary-wrapper .flex-between {
     padding-bottom: 0.5rem;
+}
+
+/* Override mobile layout constraints as requested by the user */
+@media (max-width: 768px) {
+    .temp-range {
+        flex-direction: row !important;
+        gap: 8px !important;
+    }
+    
+    .temp-input {
+        flex: 1 !important;
+    }
+    
+    .temp-input input {
+        width: 100% !important;
+        max-width: 60px !important;
+    }
+
+    .activity-row {
+        grid-template-columns: 1fr 1fr 1fr !important;
+        gap: 6px !important;
+    }
+    
+    .activity-item input {
+        font-size: 0.9rem !important; 
+    }
 }

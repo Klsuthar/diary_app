@@ -951,12 +951,18 @@ class UI {
         // Mood Timeline - v4.2 stores one mood object per period
         const getMoodParams = (period) => {
             const container = document.getElementById(`${period}-moods`);
-            const entry = container?.querySelector('.mood-entry');
-            return {
-                mood_level: Number(entry?.querySelector('.mood-slider')?.value) || 5,
-                mood_category: entry?.querySelector('.mood-cat')?.value || "",
-                mood_feeling: entry?.querySelector('.mood-feel')?.value || ""
-            };
+            const entries = container?.querySelectorAll('.mood-entry');
+            const arr = [];
+            if (entries) {
+                entries.forEach(entry => {
+                    arr.push({
+                        mood_level: Number(entry.querySelector('.mood-slider')?.value) || 5,
+                        mood_category: entry.querySelector('.mood-cat')?.value || "",
+                        mood_feeling: entry.querySelector('.mood-feel')?.value || ""
+                    });
+                });
+            }
+            return arr;
         };
 
         // Apps
