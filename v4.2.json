@@ -42,26 +42,39 @@
     "mental_state": "Positive",
     "mental_state_reason": "Had a productive day",
     "mood_timeline": {
-      "morning": {
-        "mood_level": 8,
-        "mood_category": "positive_high_energy",
-        "mood_feeling": "energetic"
-      },
-      "afternoon": {
-        "mood_level": 7,
-        "mood_category": "positive_high_energy",
-        "mood_feeling": "motivated"
-      },
-      "evening": {
-        "mood_level": 6,
-        "mood_category": "neutral_balanced",
-        "mood_feeling": "calm"
-      },
-      "night": {
-        "mood_level": 5,
-        "mood_category": "low_energy_tired",
-        "mood_feeling": "tired"
-      }
+      "morning": [
+        {
+          "mood_level": 5,
+          "mood_category": "",
+          "mood_feeling": ""
+        },
+        {
+          "mood_level": 6,
+          "mood_category": "",
+          "mood_feeling": ""
+        }
+      ],
+      "afternoon": [
+        {
+          "mood_level": 7,
+          "mood_category": "positive_high_energy",
+          "mood_feeling": "motivated"
+        }
+      ],
+      "evening": [
+        {
+          "mood_level": 6,
+          "mood_category": "neutral_balanced",
+          "mood_feeling": "calm"
+        }
+      ],
+      "night": [
+        {
+          "mood_level": 5,
+          "mood_category": "low_energy_tired",
+          "mood_feeling": "tired"
+        }
+      ]
     },
     "energy_level": 7,
     "energy_reason": "Good sleep and exercise",

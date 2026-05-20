@@ -1386,6 +1386,14 @@ class UI {
         setIfEmpty('breakfast-appetite', '5');
         setIfEmpty('lunch-appetite', '5');
         setIfEmpty('dinner-appetite', '5');
+        setIfEmpty('medications-morning', 'No');
+        setIfEmpty('medications-afternoon', 'No');
+        setIfEmpty('medications-evening', 'No');
+        setIfEmpty('medications-night', 'No');
+        setIfEmpty('symptoms-morning', 'No');
+        setIfEmpty('symptoms-afternoon', 'No');
+        setIfEmpty('symptoms-evening', 'No');
+        setIfEmpty('symptoms-night', 'No');
         setIfEmpty('meditation-status', 'No');
         setIfEmpty('meditation-duration', '0');
         setIfEmpty('other-notes-status', 'No');
