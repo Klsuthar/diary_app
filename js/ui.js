@@ -50,11 +50,18 @@ class UI {
         }, 500);
         this.debouncedSave = () => saveWithDateGuard(this.currentDate);
 
+        // Async storage is ready; kick off initial load after DB opens
+        this._storageReady = this.storage._dbPromise;
+
         this.initEventListeners();
 
-        // Initial Load
-        this.loadEntry(this.currentDate);
-        this.updateDateDisplay();
+        // Kick off async initialization (load entry + suggestions)
+        // Using an arrow IIFE so the constructor stays synchronous
+        (async () => {
+            await this.loadEntry(this.currentDate);
+            this.updateDateDisplay();
+            await this.updateWeatherSuggestions();
+        })();
     }
 
     initElements() {
@@ -747,8 +754,8 @@ class UI {
         }
     }
 
-    updateWeatherSuggestions() {
-        const entries = this.storage.getEntries();
+    async updateWeatherSuggestions() {
+        const entries = await this.storage.getEntries();
         const weatherSet = new Set();
         const dietSuggestions = {
             'breakfast-list': new Set(),
@@ -756,11 +763,11 @@ class UI {
             'dinner-list': new Set(),
             'snacks-list': new Set()
         };
-        
+
         Object.values(entries).forEach(entry => {
             const weather = entry.environment?.weather_condition;
             if (weather) weatherSet.add(weather);
-            
+
             // Collect diet suggestions
             if (entry.diet_and_nutrition) {
                 const breakfast = entry.diet_and_nutrition.breakfast;
@@ -776,7 +783,7 @@ class UI {
                 if (entry.diet_and_nutrition.additional_items) dietSuggestions['snacks-list'].add(entry.diet_and_nutrition.additional_items);
             }
         });
-        
+
         const datalist = document.getElementById('weather-suggestions');
         if (datalist) {
             weatherSet.forEach(weather => {
@@ -787,26 +794,26 @@ class UI {
                 }
             });
         }
-        
+
         // Populate diet suggestions
         Object.keys(dietSuggestions).forEach(listId => {
-            const datalist = document.getElementById(listId);
-            if (datalist) {
-                datalist.innerHTML = '';
+            const dl = document.getElementById(listId);
+            if (dl) {
+                dl.innerHTML = '';
                 dietSuggestions[listId].forEach(value => {
                     const option = document.createElement('option');
                     option.value = value;
-                    datalist.appendChild(option);
+                    dl.appendChild(option);
                 });
             }
         });
-        
+
         // Personal Care Suggestions
-        this.updatePersonalCareSuggestions();
+        await this.updatePersonalCareSuggestions();
     }
 
-    updatePersonalCareSuggestions() {
-        const entries = this.storage.getEntries();
+    async updatePersonalCareSuggestions() {
+        const entries = await this.storage.getEntries();
         const suggestions = {
             'face-name-list': new Set(),
             'face-brand-list': new Set(),
@@ -869,7 +876,7 @@ class UI {
 
         if (tabId === 'tab-history') {
             const searchInput = document.getElementById('search-history');
-            this.renderHistory(searchInput?.value || '', this.currentFilter || 'all');
+            this.renderHistory(searchInput?.value || '', this.currentFilter || 'all'); // async, fire-and-forget
         }
     }
 
@@ -1066,17 +1073,17 @@ class UI {
         };
     }
 
-    loadEntry(date) {
+    async loadEntry(date) {
         this.resetForm();
-        const data = this.storage.getEntry(date);
-        
+        const data = await this.storage.getEntry(date);
+
         // Temporarily disable change tracking during load
-        const tempDisableTracking = this.hasUnsavedChanges;
         this.hasUnsavedChanges = false;
-        
+
         if (!data) {
             // Only set defaults for new entries (not in history)
-            if (!this.storage.hasEntry(date)) {
+            const exists = await this.storage.hasEntry(date);
+            if (!exists) {
                 this.setDefaultValues();
             }
             this.lastSavedData = null;
@@ -1405,20 +1412,20 @@ class UI {
         });
     }
 
-    saveEntry(showToast = false) {
+    async saveEntry(showToast = false) {
         const data = this.collectData();
-        const res = this.storage.saveEntry(this.currentDate, data);
+        const res  = await this.storage.saveEntry(this.currentDate, data);
         if (res.success) {
             this.hasUnsavedChanges = false;
             this.lastSavedData = JSON.stringify(data);
             if (showToast) {
-                this.showToast('Saved Successfully');
+                this.showToast('Saved Successfully ✓');
             }
         }
         // Refresh history if on history tab
         const historyTab = document.getElementById('tab-history');
         if (historyTab && historyTab.classList.contains('active')) {
-            this.renderHistory('', 'all');
+            this.renderHistory('', 'all'); // async, fire-and-forget
         }
     }
 
@@ -1455,7 +1462,7 @@ class UI {
         });
     }
 
-    renderHistory(searchTerm = "", filterMood = "all") {
+    async renderHistory(searchTerm = "", filterMood = "all") {
         this.currentFilter = filterMood;
         document.querySelectorAll('.filter-chip').forEach(chip => {
             chip.classList.toggle('active', (chip.dataset.filter || 'all') === filterMood);
@@ -1463,7 +1470,7 @@ class UI {
 
         const list = document.getElementById('history-list');
         list.innerHTML = "";
-        const entries = this.storage.getEntries();
+        const entries = await this.storage.getEntries();
         let sortedDates = Object.keys(entries).sort((a, b) => {
             const timeA = this.getEntrySortTime(a, entries[a]);
             const timeB = this.getEntrySortTime(b, entries[b]);
@@ -1690,19 +1697,20 @@ class UI {
         console.log('History loaded and switched to Basic tab');
     }
 
-    exportOne(date) {
-        const json = this.storage.exportEntry(date);
-        this.storage.downloadJSON(`${date}.json`, json);
+    async exportOne(date) {
+        const json = await this.storage.exportEntry(date);
+        if (json) this.storage.downloadJSON(`${date}.json`, json);
     }
 
-    exportEntry() {
-        this.saveEntry();
-        this.exportOne(this.currentDate);
+    async exportEntry() {
+        await this.saveEntry();
+        await this.exportOne(this.currentDate);
     }
 
-    shareEntry() {
-        this.saveEntry();
-        const json = this.storage.exportEntry(this.currentDate);
+    async shareEntry() {
+        await this.saveEntry();
+        const json = await this.storage.exportEntry(this.currentDate);
+        if (!json) { this.showToast('No data to share'); return; }
         if (navigator.share) {
             navigator.share({
                 title: `Diary Entry - ${this.currentDate}`,
@@ -1714,37 +1722,39 @@ class UI {
         }
     }
 
-    exportSelected() {
+    async exportSelected() {
         const dates = Array.from(this.selectedEntries);
-        const data = dates.map(d => this.storage.getEntry(d));
+        const data  = await Promise.all(dates.map(d => this.storage.getEntry(d)));
         this.storage.downloadJSON(`diary_export_${dates.length}.json`, JSON.stringify(data, null, 2));
         this.exitMultiSelect();
     }
 
-    deleteOne(date) {
+    async deleteOne(date) {
         if (confirm('Delete this entry?')) {
-            this.storage.deleteEntry(date);
-            this.renderHistory('', 'all');
+            await this.storage.deleteEntry(date);
+            this.renderHistory('', 'all'); // async, fire-and-forget
             if (date === this.currentDate) this.resetForm();
         }
     }
 
-    deleteSelected() {
+    async deleteSelected() {
         if (confirm(`Delete ${this.selectedEntries.size} entries?`)) {
-            this.selectedEntries.forEach(d => this.storage.deleteEntry(d));
+            await Promise.all(Array.from(this.selectedEntries).map(d => this.storage.deleteEntry(d)));
             this.exitMultiSelect();
-            this.renderHistory('', 'all');
+            this.renderHistory('', 'all'); // async, fire-and-forget
         }
     }
 
-    createBackup() {
-        const all = this.storage.getEntries();
+    async createBackup() {
+        const all = await this.storage.getEntries();
+        // Rebuild as a flat object keyed by date — data is NOT modified
         const normalizedBackup = {};
         Object.keys(all).forEach(dateKey => {
             normalizedBackup[dateKey] = { ...(all[dateKey] || {}), date: dateKey };
         });
         const stamp = new Date().toISOString().replace(/[:.]/g, '-');
         this.storage.downloadJSON(`diary-backup-${stamp}.json`, JSON.stringify(normalizedBackup, null, 2));
+        this.showToast(`Backup created — ${Object.keys(all).length} entries`);
     }
 
     handleFileImport(e, isBackup) {
@@ -1752,16 +1762,18 @@ class UI {
         if (!file) return;
 
         const reader = new FileReader();
-        reader.onload = (evt) => {
+        reader.onload = async (evt) => {
             const content = evt.target.result;
-            const res = this.storage.importEntries(content);
+            const res = await this.storage.importEntries(content);
             if (res.success) {
-                this.showToast(`Imported ${res.count} entries`);
-                this.loadEntry(this.currentDate);
+                this.showToast(`Imported ${res.count} entries ✓`);
+                await this.loadEntry(this.currentDate);
                 const historyTab = document.getElementById('tab-history');
                 if (historyTab && historyTab.classList.contains('active')) {
-                    this.renderHistory('', 'all');
+                    this.renderHistory('', 'all'); // async, fire-and-forget
                 }
+                // Refresh autocomplete suggestions
+                this.updateWeatherSuggestions();
             } else {
                 alert('Import Failed: ' + res.error);
             }
@@ -1770,9 +1782,9 @@ class UI {
         reader.readAsText(file);
     }
 
-    clearForm() {
+    async clearForm() {
         if (confirm('Clear current form and delete saved data?')) {
-            this.storage.deleteEntry(this.currentDate);
+            await this.storage.deleteEntry(this.currentDate);
             this.resetForm();
             const historyTab = document.getElementById('tab-history');
             if (historyTab && historyTab.classList.contains('active')) {
@@ -1781,9 +1793,9 @@ class UI {
         }
     }
 
-    importLastDayData(section) {
+    async importLastDayData(section) {
         const prevDate = this.addDaysToDateKey(this.currentDate, -1);
-        const prevData = this.storage.getEntry(prevDate);
+        const prevData = await this.storage.getEntry(prevDate);
 
         if (!prevData) {
             this.showToast('No data for previous day');

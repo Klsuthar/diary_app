@@ -1,145 +1,283 @@
+/**
+ * Storage v2 — IndexedDB Backend
+ * -----------------------------------------------
+ * All public methods are async (return Promises).
+ *
+ * DB Layout:
+ *   Database     : "diary_app_db"
+ *   Object Store : "entries"
+ *   Key (keyPath): "date"  (YYYY-MM-DD string)
+ *
+ * Data is imported only via JSON backup/restore.
+ * No automatic migration from old localStorage.
+ * -----------------------------------------------
+ */
 class Storage {
     constructor() {
-        this.dbName = 'diary_entries';
+        this.DB_NAME    = 'diary_app_db';
+        this.DB_VERSION = 1;
+        this.STORE_NAME = 'entries';
+
+        // Single shared DB connection promise — reused across all calls
+        this._dbPromise = this._openDB();
     }
 
+    // ------------------------------------------------------------------ //
+    //  PRIVATE — IndexedDB Setup
+    // ------------------------------------------------------------------ //
+
+    /**
+     * Open (and if needed upgrade) the IndexedDB database.
+     * Returns a Promise<IDBDatabase>.
+     */
+    _openDB() {
+        return new Promise((resolve, reject) => {
+            const req = indexedDB.open(this.DB_NAME, this.DB_VERSION);
+
+            req.onupgradeneeded = (e) => {
+                const db = e.target.result;
+                if (!db.objectStoreNames.contains(this.STORE_NAME)) {
+                    db.createObjectStore(this.STORE_NAME, { keyPath: 'date' });
+                }
+            };
+
+            req.onsuccess  = (e) => resolve(e.target.result);
+            req.onerror    = (e) => reject(e.target.error);
+            req.onblocked  = ()  => console.warn('[Storage] IDB open blocked');
+        });
+    }
+
+    /**
+     * Wrap an IDBRequest in a Promise.
+     */
+    _promisify(request) {
+        return new Promise((resolve, reject) => {
+            request.onsuccess = (e) => resolve(e.target.result);
+            request.onerror   = (e) => reject(e.target.error);
+        });
+    }
+
+    /**
+     * Get a read-write transaction on the entries store.
+     */
+    async _txRW() {
+        const db = await this._dbPromise;
+        return db.transaction(this.STORE_NAME, 'readwrite').objectStore(this.STORE_NAME);
+    }
+
+    /**
+     * Get a read-only transaction on the entries store.
+     */
+    async _txRO() {
+        const db = await this._dbPromise;
+        return db.transaction(this.STORE_NAME, 'readonly').objectStore(this.STORE_NAME);
+    }
+
+    // ------------------------------------------------------------------ //
+    //  PUBLIC — Date Key Helpers (synchronous)
+    // ------------------------------------------------------------------ //
+
+    /**
+     * Normalise any date string to YYYY-MM-DD.
+     * Returns null if the string is not a recognisable date.
+     */
     normalizeDateKey(dateStr) {
         if (typeof dateStr !== 'string') return null;
         const cleaned = dateStr.trim();
         if (/^\d{4}-\d{2}-\d{2}$/.test(cleaned)) return cleaned;
 
-        // Accept ISO timestamps and keep only YYYY-MM-DD part
+        // Accept ISO timestamps — keep only the date part
         const isoMatch = cleaned.match(/^(\d{4}-\d{2}-\d{2})T/);
         return isoMatch ? isoMatch[1] : null;
     }
 
-    // Save an entry
-    saveEntry(date, data) {
+    // ------------------------------------------------------------------ //
+    //  PUBLIC — CRUD  (all async)
+    // ------------------------------------------------------------------ //
+
+    /**
+     * Save (insert or overwrite) a diary entry for the given date.
+     * @param {string} date   - YYYY-MM-DD
+     * @param {object} data   - Plain JS object (v4.2 structure)
+     * @returns {Promise<{success:boolean, error?:string}>}
+     */
+    async saveEntry(date, data) {
         const normalizedDate = this.normalizeDateKey(date);
-        if (!normalizedDate) return { success: false, error: 'Valid date is required (YYYY-MM-DD)' };
-        
+        if (!normalizedDate) {
+            return { success: false, error: 'Valid date required (YYYY-MM-DD)' };
+        }
         try {
-            const entries = this.getEntries();
-            const normalizedData = (data && typeof data === 'object')
+            const store  = await this._txRW();
+            const record = (data && typeof data === 'object')
                 ? { ...data, date: normalizedDate }
-                : data;
-            entries[normalizedDate] = normalizedData;
-            localStorage.setItem(this.dbName, JSON.stringify(entries));
+                : { date: normalizedDate };
+            await this._promisify(store.put(record));
             return { success: true };
         } catch (e) {
-            console.error("Save failed", e);
+            console.error('[Storage] saveEntry failed:', e);
             return { success: false, error: e.message };
         }
     }
 
-    // Get all entries
-    getEntries() {
-        const entriesStr = localStorage.getItem(this.dbName);
-        return entriesStr ? JSON.parse(entriesStr) : {};
-    }
-
-    // Get single entry
-    getEntry(date) {
-        const entries = this.getEntries();
-        return entries[date] || null;
-    }
-
-    // Delete entry
-    deleteEntry(date) {
-        const entries = this.getEntries();
-        if (entries[date]) {
-            delete entries[date];
-            localStorage.setItem(this.dbName, JSON.stringify(entries));
-            return true;
+    /**
+     * Retrieve all entries as a plain object keyed by date string.
+     * @returns {Promise<Object>}  e.g. { "2026-05-20": {...}, ... }
+     */
+    async getEntries() {
+        try {
+            const store   = await this._txRO();
+            const records = await this._promisify(store.getAll());
+            const result  = {};
+            records.forEach(r => { result[r.date] = r; });
+            return result;
+        } catch (e) {
+            console.error('[Storage] getEntries failed:', e);
+            return {};
         }
-        return false;
     }
 
-    // Check if entry exists
-    hasEntry(date) {
-        const entries = this.getEntries();
-        return !!entries[date];
+    /**
+     * Retrieve a single entry.
+     * @param {string} date - YYYY-MM-DD
+     * @returns {Promise<object|null>}
+     */
+    async getEntry(date) {
+        const normalized = this.normalizeDateKey(date);
+        if (!normalized) return null;
+        try {
+            const store  = await this._txRO();
+            const result = await this._promisify(store.get(normalized));
+            return result ?? null;
+        } catch (e) {
+            console.error('[Storage] getEntry failed:', e);
+            return null;
+        }
     }
 
-    // Clear all data (Dangerous)
-    clearAll() {
-        localStorage.removeItem(this.dbName);
+    /**
+     * Delete a single entry.
+     * @param {string} date - YYYY-MM-DD
+     * @returns {Promise<boolean>}
+     */
+    async deleteEntry(date) {
+        const normalized = this.normalizeDateKey(date);
+        if (!normalized) return false;
+        try {
+            const store = await this._txRW();
+            await this._promisify(store.delete(normalized));
+            return true;
+        } catch (e) {
+            console.error('[Storage] deleteEntry failed:', e);
+            return false;
+        }
     }
 
-    // Export single entry as JSON matching the strict output.json structure
-    exportEntry(date) {
-        const entry = this.getEntry(date);
+    /**
+     * Check whether an entry exists for the given date.
+     * @param {string} date - YYYY-MM-DD
+     * @returns {Promise<boolean>}
+     */
+    async hasEntry(date) {
+        const entry = await this.getEntry(date);
+        return entry !== null;
+    }
+
+    /**
+     * Delete ALL entries from the database. Use with caution.
+     * @returns {Promise<void>}
+     */
+    async clearAll() {
+        try {
+            const store = await this._txRW();
+            await this._promisify(store.clear());
+        } catch (e) {
+            console.error('[Storage] clearAll failed:', e);
+        }
+    }
+
+    // ------------------------------------------------------------------ //
+    //  PUBLIC — Export / Import  (data-unchanged, v4.2 compatible)
+    // ------------------------------------------------------------------ //
+
+    /**
+     * Export a single entry as a formatted JSON string.
+     * The object is returned exactly as stored — no field modifications.
+     * @param {string} date - YYYY-MM-DD
+     * @returns {Promise<string|null>}
+     */
+    async exportEntry(date) {
+        const entry = await this.getEntry(date);
         if (!entry) return null;
-
-        // Ensure structure matches output.json exactly
-        // We assume 'entry' object is already built with this structure by the UI
-        // But for safety, we can re-construct or validator here.
-        // For now, we'll return it directly as we'll enforce structure in UI.js
-        
-        // However, let's map it to be safe if we change internal storage structure later.
-        // The prompt asks to "output file same @[output.json]".
-        
         return JSON.stringify(entry, null, 2);
     }
-    
-    // Import from JSON file content
-    importEntries(jsonContent) {
-       try {
-           const data = JSON.parse(jsonContent);
-           /* 
-               Handle two cases:
-               1. Array of entries (Backup)
-               2. Single entry object
-           */
-           
-           let count = 0;
-           
+
+    /**
+     * Import entries from a JSON string.
+     * Handles three formats:
+     *   1. Bulk backup object  — { "YYYY-MM-DD": {...}, ... }
+     *   2. Array of entries    — [ { date: "YYYY-MM-DD", ... }, ... ]
+     *   3. Single entry object — { date: "YYYY-MM-DD", version: "4.2", ... }
+     *
+     * IMPORTANT: Data goes in exactly as-is — no fields added, removed, or modified.
+     *
+     * @param {string} jsonContent - Raw JSON string from file
+     * @returns {Promise<{success:boolean, count:number, error?:string}>}
+     */
+    async importEntries(jsonContent) {
+        try {
+            const data = JSON.parse(jsonContent);
+            let count  = 0;
+
             if (Array.isArray(data)) {
-               // Backup format? Or list of entries?
-               // Let's assume backup is an object { "YYYY-MM-DD": {...}, ... } or array
-               // If it's the requested output format, it has a "date" field.
-               
-               data.forEach(item => {
-                   const dateKey = item?.date ? this.normalizeDateKey(item.date) : null;
-                   if (dateKey) {
-                       this.saveEntry(dateKey, item);
-                       count++;
-                   }
-               });
-           } else {
-               // Single object
-               // Check if it's our direct backup format (Map) VS single entry
+                // Format 2 — array
+                for (const item of data) {
+                    const dateKey = item?.date ? this.normalizeDateKey(item.date) : null;
+                    if (dateKey) {
+                        await this.saveEntry(dateKey, item);
+                        count++;
+                    }
+                }
+            } else if (data && typeof data === 'object') {
                 if (data.date && data.version) {
-                     // Single Output.json format
-                     const dateKey = this.normalizeDateKey(data.date);
-                     if (dateKey) {
-                         this.saveEntry(dateKey, data);
-                         count = 1;
-                     }
+                    // Format 3 — single entry
+                    const dateKey = this.normalizeDateKey(data.date);
+                    if (dateKey) {
+                        await this.saveEntry(dateKey, data);
+                        count = 1;
+                    }
                 } else {
-                    // Maybe it's a bulk backup object keyed by date
-                    Object.keys(data).forEach(dateKey => {
-                        const normalizedDate = this.normalizeDateKey(dateKey);
-                        if (normalizedDate) {
-                            this.saveEntry(normalizedDate, data[dateKey]);
+                    // Format 1 — bulk backup object keyed by date
+                    for (const [dateKey, entry] of Object.entries(data)) {
+                        const normalized = this.normalizeDateKey(dateKey);
+                        if (normalized) {
+                            await this.saveEntry(normalized, entry);
                             count++;
                         }
-                    });
+                    }
                 }
-           }
-           
-           return { success: true, count };
-       } catch(e) {
-           return { success: false, error: e.message };
-       }
+            }
+
+            return { success: true, count };
+        } catch (e) {
+            console.error('[Storage] importEntries failed:', e);
+            return { success: false, count: 0, error: e.message };
+        }
     }
 
-    // Download file helper
+    // ------------------------------------------------------------------ //
+    //  PUBLIC — File Download Helper (synchronous)
+    // ------------------------------------------------------------------ //
+
+    /**
+     * Trigger a JSON file download in the browser.
+     * @param {string} filename - e.g. "diary-backup-2026-05-20.json"
+     * @param {string} content  - JSON string
+     */
     downloadJSON(filename, content) {
         const blob = new Blob([content], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
+        const url  = URL.createObjectURL(blob);
+        const a    = document.createElement('a');
+        a.href     = url;
         a.download = filename;
         document.body.appendChild(a);
         a.click();
